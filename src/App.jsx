@@ -141,30 +141,36 @@ export default function App() {
     window.location.href = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${redirect}&scope=${encodeURIComponent("tweet.read tweet.write users.read offline.access")}&state=${s}&code_challenge=${c}&code_challenge_method=S256`;
   }
 
-  /* ── Generate tweets via Claude AI ── */
+  /* ── Generate tweets via OpenAI ── */
   async function generate() {
     setLoading(true); setGenErr(null); setTweets([]); setPostRes({});
     const pc = BRAND.pillars[pillar];
     const topics = [...pc.topics].sort(() => Math.random()-.5).slice(0,2).join(" and ");
     const sys = `You are a B2B social media strategist for Akeera — AI hospital management software (product: MedQR) for Indian hospitals. Brand voice: forward-thinking, empowering, never salesy. Audience: hospital owners & administrators. Always keep tweets under 280 chars, use line breaks, end with 2-3 hashtags. Return ONLY a raw JSON array of 3 strings. No markdown, no preamble.`;
     const usr = `Pillar: ${pc.label}\nTopics: ${topics}\nTone: ${tone}\n${note ? "Note: "+note : ""}\nReturn: ["tweet1","tweet2","tweet3"]`;
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     try {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "gpt-4o",
           max_tokens: 1000,
-          system: sys,
-          messages: [{ role: "user", content: usr }]
+          messages: [
+            { role: "system", content: sys },
+            { role: "user", content: usr }
+          ]
         })
       });
       const d = await r.json();
-      const raw = d.content?.map(b => b.text||"").join("") || "[]";
+      const raw = d.choices?.[0]?.message?.content || "[]";
       setTweets(JSON.parse(raw.replace(/```json|```/g,"").trim()));
     } catch {
       setTweets(SAMPLES[pillar]);
-      setGenErr("Could not reach Claude API — showing sample tweets instead.");
+      setGenErr("Could not reach OpenAI API — showing sample tweets instead.");
     } finally { setLoading(false); }
   }
 
