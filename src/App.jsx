@@ -27,19 +27,19 @@ const TONES = [
 
 const SAMPLES = {
   product: [
-    "Your OPD shouldn't feel like a traffic jam.\n\nMedQR maps your outpatient workflows, removes manual queues, and gives every patient a smoother first impression — every single day.\n\n#MedQR #SmartHospitals #OPD",
-    "Billing disputes kill patient trust.\n\nBillMedQR gives every patient transparent estimates before treatment — and clean, auditable records after.\n\nFinancial clarity is clinical clarity.\n\nakeera.co\n\n#HealthTech #HospitalBilling",
-    "Labs shouldn't be a bottleneck.\n\nLabQR connects test orders, processing, and result delivery into one seamless flow — so doctors get answers faster and patients go home sooner.\n\n#LabQR #Diagnostics #DigitalHealth",
+    "Most hospital billing errors aren't fraud. They're fatigue. Staff entering the same data into three systems by end of shift.\n\nBillMedQR closes that loop.",
+    "An OPD that runs on paper in 2025 isn't a technology problem. It's a leadership decision waiting to be made.\n\n#IndiaHealthcare",
+    "Pharmacy stock-outs in Indian hospitals cost more in patient trust than they do in rupees. MedIQ tracks consumption patterns before the shortage happens.",
   ],
   insight: [
-    "70% of medical errors trace back to communication gaps between departments.\n\nNot equipment. Not training.\n\nCommunication.\n\nThis is the exact problem MedQR was built to solve.\n\n#PatientSafety #HealthcareAI",
-    "India adds ~6 lakh hospital beds every year.\n\nBut most new hospitals still run on spreadsheets.\n\nThe infrastructure gap isn't in beds. It's in intelligence.\n\n#DigitalHealth #IndiaHealthcare",
-    "ABDM isn't just a compliance checkbox.\n\nIt's the foundation for a connected health ecosystem — where patient data travels with the patient, not the paperwork.\n\nMedQR is ABDM-ready from day one. 🇮🇳\n\n#ABDM #DigitalIndia",
+    "The hospitals getting NABH accreditation fastest aren't the biggest ones. They're the ones with the clearest internal processes.",
+    "ABDM compliance isn't the hard part. The hard part is getting your existing workflows to survive the transition.\n\n#ABDM",
+    "Less than 12% of India's 70,000 hospitals are fully digitized. The problem isn't awareness. It's that most available software wasn't built for how Indian hospitals actually work.",
   ],
   company: [
-    "We didn't set out to build hospital software.\n\nWe set out to answer one question:\nWhy do hospitals that care so much, struggle so much?\n\nMedQR is our answer.\n\n#Akeera #HealthTech",
-    "Proud to be trusted by hospitals across India — from single-specialty clinics to multi-ward facilities.\n\nEvery new partner reminds us why we started. 🏥\n\n#Akeera #SmartHospitals",
-    "Scale doesn't have to mean chaos.\n\nAkeera was built for hospitals ready to grow — without losing the quality of care that made them worth growing in the first place.\n\nakeera.co\n\n#Akeera #MedQR",
+    "We didn't build MedQR to replace hospital staff. We built it because good staff shouldn't have to spend their shifts doing what software can do.",
+    "Three years of being inside hospitals taught us one thing: the bottleneck is never where administrators think it is.",
+    "VaidAI isn't about replacing clinical judgment. It's about making sure the right information reaches the right person before the decision has to be made.",
   ],
 };
 
@@ -146,8 +146,56 @@ export default function App() {
     setLoading(true); setGenErr(null); setTweets([]); setPostRes({});
     const pc = BRAND.pillars[pillar];
     const topics = [...pc.topics].sort(() => Math.random()-.5).slice(0,2).join(" and ");
-    const sys = `You are a B2B social media strategist for Akeera — AI hospital management software (product: MedQR) for Indian hospitals. Brand voice: forward-thinking, empowering, never salesy. Audience: hospital owners & administrators. Always keep tweets under 280 chars, use line breaks, end with 2-3 hashtags. Return ONLY a raw JSON array of 3 strings. No markdown, no preamble.`;
-    const usr = `Pillar: ${pc.label}\nTopics: ${topics}\nTone: ${tone}\n${note ? "Note: "+note : ""}\nReturn: ["tweet1","tweet2","tweet3"]`;
+
+    const sys = `You are writing tweets for Meghna Saxena — founder of Akeera, building the MedQR ecosystem.
+
+WHO MEGHNA IS:
+- Founder building three products: MedQR (AI hospital OS), MedIQ (pharmacy intelligence), VaidAI (agent orchestration for clinical & hospital workflows)
+- She has deep, firsthand knowledge of how Indian hospitals actually operate — the chaos, the workarounds, the human cost of broken systems
+- She writes from a founder's perspective: calm, observant, systems-thinker
+- Her audience: hospital owners, administrators, clinicians, healthtech founders, AI builders
+
+MEGHNA'S VOICE — STRICT RULES:
+- Tone: thoughtful, observant, calm authority. Practical. Grounded in real hospital workflows
+- NEVER use hype, buzzwords, emojis, or aggressive marketing language
+- NEVER use phrases like "game-changer", "revolutionize", "unlock", "seamless", "leverage", "excited to share"
+- NO emojis whatsoever
+- Keep tweets short: 1–3 lines, strictly under 240 characters
+- Content structure: observation → insight → subtle implication (never a hard sell)
+- Mix: 80% healthcare/systems insights, 10% founder thoughts, 10% subtle product mentions
+- When mentioning products, connect naturally to the insight — never as a pitch
+- Write like a thoughtful person, not a brand account
+- No hashtags unless they are very specific and relevant (max 1–2, never generic)
+
+INDIA HEALTHCARE CONTEXT — USE NATURALLY:
+- India has 70,000+ hospitals, less than 12% fully digitized
+- Most hospitals in Tier 2 and Tier 3 cities still run on paper or basic software
+- Government initiatives: ABDM, Ayushman Bharat, PM-JAY, NHA, NABH accreditation
+- Real pain points: OPD patients waiting 2–3 hours, billing errors costing lakhs, PM-JAY claim rejections, pharmacy stock-outs, lab report delays
+- AI in Indian healthcare growing 40%+ annually
+- Competitors: Practo, eHospital, Insta HMS
+- Akeera's real customers: Yash Hospital, Krystal, Apex
+- Decision makers: hospital owners, medical directors, nursing home CEOs, healthcare chain CTOs
+- Use ₹ when referencing costs, use Indian city names where relevant
+
+TWEET EXAMPLES IN MEGHNA'S VOICE:
+- "Most hospital billing errors aren't fraud. They're fatigue. Staff entering the same data into three systems by end of shift."
+- "An OPD that runs on paper in 2025 isn't a technology problem. It's a leadership decision waiting to be made."
+- "ABDM compliance isn't the hard part. The hard part is getting your existing workflows to survive the transition."
+- "The hospitals getting NABH accreditation fastest aren't the biggest ones. They're the ones with the clearest internal processes."
+- "Pharmacy stock-outs in Indian hospitals cost more in patient trust than they do in rupees."
+
+Return ONLY a raw JSON array of 3 tweet strings. No markdown, no preamble, no explanation. Just: ["tweet1","tweet2","tweet3"]`;
+
+    const usr = `Content Pillar: ${pc.label}
+Topics to draw from: ${topics}
+Tone preference: ${tone}
+${note ? `Special instruction from Meghna: ${note}` : ""}
+
+Write 3 tweets in Meghna's voice. Each must have a completely different angle, observation, or insight. No two should feel similar in structure or idea. They should read like real thoughts from a founder who spends time in hospitals — not marketing copy.
+
+Return: ["tweet1","tweet2","tweet3"]`;
+
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     try {
       const r = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -158,7 +206,8 @@ export default function App() {
         },
         body: JSON.stringify({
           model: "gpt-4o",
-          max_tokens: 1000,
+          max_tokens: 1200,
+          temperature: 0.9,
           messages: [
             { role: "system", content: sys },
             { role: "user", content: usr }
