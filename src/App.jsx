@@ -106,13 +106,15 @@ export default function App() {
     (async () => {
       try {
         const redirect = window.location.origin + window.location.pathname;
-        const res = await fetch("https://api.twitter.com/2/oauth2/token", {
+        const res = await fetch("/api/token", {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            code, grant_type: "authorization_code",
-            client_id: sc, redirect_uri: redirect, code_verifier: sv
-          }).toString(),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            code_verifier: sv,
+            client_id: sc,
+            redirect_uri: redirect,
+          }),
         });
         const d = await res.json();
         if (d.access_token) {
