@@ -5,10 +5,16 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { code, code_verifier, client_id, redirect_uri } = req.body;
+  const client_secret = process.env.TWITTER_CLIENT_SECRET;
+
+  const credentials = Buffer.from(`${client_id}:${client_secret}`).toString("base64");
 
   const response = await fetch("https://api.twitter.com/2/oauth2/token", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${credentials}`,
+    },
     body: new URLSearchParams({
       code,
       grant_type: "authorization_code",
