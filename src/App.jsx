@@ -225,20 +225,42 @@ Return: ["tweet1","tweet2","tweet3"]`;
     } finally { setLoading(false); }
   }
 
-  /* ── Post tweet to Twitter ── */
-  async function postTweet(text, key) {
+  /* ── Post tweet to Twitter (with optional media) ── */
+  async function postTweet(text, key, mediaFiles = []) {
     if (!connected) { setShowConnect(true); return; }
     setPosting(key);
     try {
+      let mediaIds = [];
+
+      // Upload each media file first if any
+      if (mediaFiles.length > 0) {
+        for (const file of mediaFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("access_token", creds.accessToken);
+          const uploadRes = await fetch("/api/upload-media", {
+            method: "POST",
+            body: formData,
+          });
+          if (!uploadRes.ok) throw new Error("Media upload failed");
+          const uploadData = await uploadRes.json();
+          if (uploadData.media_id_string) mediaIds.push(uploadData.media_id_string);
+        }
+      }
+
+      // Post the tweet with or without media
+      const body = { text };
+      if (mediaIds.length > 0) body.media = { media_ids: mediaIds };
+
       const r = await fetch("https://api.twitter.com/2/tweets", {
         method: "POST",
         headers: { Authorization: `Bearer ${creds.accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify(body)
       });
       if (!r.ok) { const e = await r.json(); throw new Error(e.detail || e.title || "API error"); }
       setPostRes(p => ({...p, [key]: "ok"}));
-      setLibrary(prev => [{ id: Date.now(), text, pillar, at: new Date().toLocaleString(), status: "posted" }, ...prev]);
-      flash("🚀 Posted to @AkeeraHQ!");
+      setLibrary(prev => [{ id: Date.now(), text, pillar, at: new Date().toLocaleString(), status: "posted", hasMedia: mediaIds.length > 0 }, ...prev]);
+      flash(mediaFiles.length > 0 ? "🚀 Posted with media to @AkeeraHQ!" : "🚀 Posted to @AkeeraHQ!");
     } catch(e) {
       setPostRes(p => ({...p, [key]: "err"}));
       flash("Error: " + e.message, "err");
@@ -271,9 +293,32 @@ Return: ["tweet1","tweet2","tweet3"]`;
     const [localEdit, setLocalEdit] = useState(false);
     const [editTxt, setEditTxt] = useState(initialText);
     const [finalTxt, setFinalTxt] = useState(initialText);
+    const [mediaFiles, setMediaFiles] = useState([]);
+    const [mediaPreviews, setMediaPreviews] = useState([]);
+    const fileInputRef = useState(null);
     const p = BRAND.pillars[pillar];
     const isPosted = postRes[tkey] === "ok";
     const isErr = postRes[tkey] === "err";
+
+    function handleMediaSelect(e) {
+      const files = Array.from(e.target.files);
+      const allowed = files.filter(f => f.type.startsWith("image/") || f.type === "application/pdf" || f.type.startsWith("video/"));
+      if (mediaFiles.length + allowed.length > 4) { flash("Max 4 images per tweet", "err"); return; }
+      const newFiles = [...mediaFiles, ...allowed].slice(0, 4);
+      setMediaFiles(newFiles);
+      const previews = newFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        url: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+        size: (f.size / 1024).toFixed(0) + " KB",
+      }));
+      setMediaPreviews(previews);
+    }
+
+    function removeMedia(idx) {
+      setMediaFiles(prev => prev.filter((_,i) => i !== idx));
+      setMediaPreviews(prev => prev.filter((_,i) => i !== idx));
+    }
 
     return (
       <div style={{ background:"#0C1118", border:`1px solid ${isPosted?"#10B98125":"#161D2B"}`, borderRadius:14, padding:"18px 20px", marginBottom:14, transition:"all .2s" }}>
@@ -301,12 +346,51 @@ Return: ["tweet1","tweet2","tweet3"]`;
           <div style={{ fontSize:13.5, lineHeight:1.7, color:"#94A3B8", whiteSpace:"pre-wrap", marginBottom:12 }}>{finalTxt}</div>
         )}
 
+        {/* Media Previews */}
+        {mediaPreviews.length > 0 && (
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:12 }}>
+            {mediaPreviews.map((m, i) => (
+              <div key={i} style={{ position:"relative", borderRadius:8, overflow:"hidden", border:"1px solid #1E293B" }}>
+                {m.url ? (
+                  <img src={m.url} alt={m.name} style={{ width:80, height:80, objectFit:"cover", display:"block" }} />
+                ) : (
+                  <div style={{ width:80, height:80, background:"#0F1623", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    <span style={{ fontSize:20 }}>📄</span>
+                    <span style={{ fontSize:9, color:"#4B5563", textAlign:"center", padding:"0 4px", wordBreak:"break-all" }}>{m.name.slice(0,12)}</span>
+                  </div>
+                )}
+                <button onClick={() => removeMedia(i)} style={{ position:"absolute", top:2, right:2, background:"#00000099", border:"none", color:"#fff", borderRadius:"50%", width:16, height:16, fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+              </div>
+            ))}
+            {mediaFiles.length < 4 && (
+              <label style={{ width:80, height:80, border:"1px dashed #1E293B", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#2D3748", fontSize:20 }}>
+                +
+                <input type="file" accept="image/*,video/mp4,.pdf" multiple style={{ display:"none" }} onChange={handleMediaSelect} />
+              </label>
+            )}
+          </div>
+        )}
+
         {!localEdit && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
             <span style={{ fontSize:11, color:finalTxt.length>280?"#F87171":"#1E293B" }}>{finalTxt.length}/280</span>
-            <div style={{ display:"flex", gap:7, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:7, flexWrap:"wrap", alignItems:"center" }}>
               <IconBtn onClick={() => { setLocalEdit(true); setEditTxt(finalTxt); }}>✏️</IconBtn>
               <IconBtn onClick={() => save(finalTxt)}>🔖</IconBtn>
+
+              {/* Media Upload Button */}
+              {mediaFiles.length === 0 ? (
+                <label title="Add photo or video" style={{ background:"#111827", border:"none", color:"#4B5563", padding:"6px 10px", borderRadius:7, fontSize:13, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:5 }}>
+                  🖼️
+                  <input type="file" accept="image/*,video/mp4" multiple style={{ display:"none" }} onChange={handleMediaSelect} />
+                </label>
+              ) : (
+                <label title="Add more media" style={{ background:"#0F1624", border:"1px solid #3B82F425", color:"#93C5FD", padding:"6px 10px", borderRadius:7, fontSize:11, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
+                  🖼️ {mediaFiles.length}/4
+                  <input type="file" accept="image/*,video/mp4" multiple style={{ display:"none" }} onChange={handleMediaSelect} />
+                </label>
+              )}
+
               <TextBtn
                 onClick={() => copy(finalTxt, tkey)}
                 style={{ background:copied===tkey?"#0E1A14":"#111827", border:`1px solid ${copied===tkey?"#10B98130":"transparent"}`, color:copied===tkey?"#6EE7B7":"#4B5563" }}
@@ -317,7 +401,7 @@ Return: ["tweet1","tweet2","tweet3"]`;
                 📅 Schedule
               </TextBtn>
               <TextBtn
-                onClick={() => postTweet(finalTxt, tkey)}
+                onClick={() => postTweet(finalTxt, tkey, mediaFiles)}
                 disabled={posting===tkey || isPosted}
                 style={{
                   background: isPosted?"#0E1A14":isErr?"#1A0E0E":"linear-gradient(135deg,#1D9BF0,#1572B6)",
@@ -326,7 +410,7 @@ Return: ["tweet1","tweet2","tweet3"]`;
                   fontWeight:600, minWidth:80
                 }}
               >
-                {posting===tkey ? <Spin/> : isPosted ? "✓ Posted" : isErr ? "✗ Retry" : "Post on 𝕏"}
+                {posting===tkey ? <Spin/> : isPosted ? "✓ Posted" : isErr ? "✗ Retry" : mediaFiles.length > 0 ? "Post with Media 𝕏" : "Post on 𝕏"}
               </TextBtn>
             </div>
           </div>
