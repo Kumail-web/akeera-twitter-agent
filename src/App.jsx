@@ -248,16 +248,16 @@ Return: ["tweet1","tweet2","tweet3"]`;
         }
       }
 
-      // Post the tweet with or without media
-      const body = { text };
+      // Post the tweet via proxy to avoid CORS
+      const body = { text, access_token: creds.accessToken };
       if (mediaIds.length > 0) body.media = { media_ids: mediaIds };
 
-      const r = await fetch("https://api.twitter.com/2/tweets", {
+      const r = await fetch("/api/post-tweet", {
         method: "POST",
-        headers: { Authorization: `Bearer ${creds.accessToken}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
-      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || e.title || "API error"); }
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail || e.title || e.error || "API error"); }
       setPostRes(p => ({...p, [key]: "ok"}));
       setLibrary(prev => [{ id: Date.now(), text, pillar, at: new Date().toLocaleString(), status: "posted", hasMedia: mediaIds.length > 0 }, ...prev]);
       flash(mediaFiles.length > 0 ? "🚀 Posted with media to @AkeeraHQ!" : "🚀 Posted to @AkeeraHQ!");
